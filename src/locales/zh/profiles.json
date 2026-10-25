@@ -28,7 +28,7 @@
     "feedback": {
       "errors": {
         "invalidUrl": "无效的订阅链接，请输入以 http:// 或 https:// 开头的地址",
-        "onlyYaml": "仅支持 YAML 文件",
+        "onlyYaml": "仅支持 YAML 或分享链接文件（.yaml/.yml/.txt/.conf/.list）",
         "createFailed": "创建订阅失败",
         "deleteFailed": "删除订阅失败",
         "enhanceFailed": "重新激活订阅失败",

@@ -242,7 +242,12 @@ impl PrfItem {
             }),
             home: None,
             updated: Some(chrono::Local::now().timestamp() as usize),
-            file_data: Some(file_data.unwrap_or_else(|| tmpl::ITEM_LOCAL.into())),
+            // Local files may also contain share-link lists; normalize them too.
+            file_data: Some(
+                file_data
+                    .map(|d| crate::utils::uri_subscription::normalize_subscription_text(&d).to_string().into())
+                    .unwrap_or_else(|| tmpl::ITEM_LOCAL.into()),
+            ),
         })
     }
 
@@ -369,7 +374,11 @@ impl PrfItem {
 
         let data = data.trim_start_matches('\u{feff}');
 
-        let yaml = serde_yaml_ng::from_str::<Mapping>(data).context("the remote profile data is invalid yaml")?;
+        // Accept base64 subscriptions and share-link lists (vless/vmess/ss/trojan/hysteria2)
+        // by converting them into mihomo YAML before validation.
+        let data = crate::utils::uri_subscription::normalize_subscription_text(data);
+
+        let yaml = serde_yaml_ng::from_str::<Mapping>(&data).context("the remote profile data is invalid yaml")?;
 
         if !yaml.contains_key("proxies") && !yaml.contains_key("proxy-providers") {
             bail!("profile does not contain `proxies` or `proxy-providers`");
@@ -422,7 +431,7 @@ impl PrfItem {
             }),
             home,
             updated: Some(chrono::Local::now().timestamp() as usize),
-            file_data: Some(data.into()),
+            file_data: Some(data.to_string().into()),
         })
     }
 

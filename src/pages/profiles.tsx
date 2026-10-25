@@ -21,6 +21,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { readTextFile } from '@tauri-apps/plugin-fs'
 import { useLockFn } from 'ahooks'
+import * as yaml from 'js-yaml'
 import { throttle } from 'lodash-es'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -60,10 +61,43 @@ import {
 } from '@/store/app-store-context'
 import { debugLog } from '@/utils/debug'
 import { isValidUrl } from '@/utils/network'
+import parseUri from '@/utils/uri-parser'
 
 // 与 src-tauri/src/main.rs 的 worker_limit 上限(8)保持一致，避免前后端更新风暴不对齐
 const PROFILE_UPDATE_WORKER_LIMIT = 8
 const PROFILE_SWITCH_LOADING_DELAY = 400
+
+const SHARE_LINK_PATTERN =
+  /^(vless|vmess|ss|ssr|trojan|hysteria2?|hy2|tuic|anytls|wireguard|socks5?):\/\//i
+
+const isShareLink = (value: string) => SHARE_LINK_PATTERN.test(value.trim())
+
+const importShareLink = async (link: string) => {
+  const proxy = parseUri(link)
+  if (!proxy?.name) {
+    throw new Error('failed to parse the share link')
+  }
+  const fileData = yaml.dump({ proxies: [proxy] })
+  const item = {
+    type: 'local',
+    name: proxy.name,
+    desc: '',
+    url: '',
+    option: {
+      with_proxy: false,
+      self_proxy: false,
+    },
+  } as IProfileItem
+  await mutate(() => createProfile(item, fileData), {
+    id: 'create-profile',
+    errorNotice: false,
+    revalidate: [['getProfiles']],
+  })
+  await mutate(() => enhanceProfiles(), {
+    id: 'enhance-profiles',
+    errorNotice: false,
+  })
+}
 const profilePointerSensor = PointerSensor.configure({
   activationConstraints: () => undefined,
 })
@@ -126,7 +160,9 @@ const ProfilePage = () => {
       const paths = event.payload.paths
 
       for (const file of paths) {
-        if (!file.endsWith('.yaml') && !file.endsWith('.yml')) {
+        const supportedFile =
+          /\.(yaml|yml|txt|conf|list)$/i.test(file) || isShareLink(file)
+        if (!supportedFile) {
           showNotice.error('profiles.page.feedback.errors.onlyYaml')
           continue
         }
@@ -206,6 +242,24 @@ const ProfilePage = () => {
 
   const onImport = async () => {
     if (!url) return
+
+    // Share links (vless://, vmess://, ss://, trojan://, hysteria2:// ...)
+    // are converted into a local profile instead of being fetched as a URL.
+    if (isShareLink(url)) {
+      setLoading(true)
+      try {
+        await importShareLink(url.trim())
+        showNotice.success('shared.feedback.notifications.importSuccess')
+        setUrl('')
+      } catch (err) {
+        showNotice.error(err)
+      } finally {
+        setDisabled(false)
+        setLoading(false)
+      }
+      return
+    }
+
     if (!isValidUrl(url)) {
       showNotice.error('profiles.page.feedback.errors.invalidUrl')
       return

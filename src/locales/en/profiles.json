@@ -28,7 +28,7 @@
     "feedback": {
       "errors": {
         "invalidUrl": "Invalid profile URL. Please enter a URL starting with http:// or https://",
-        "onlyYaml": "Only YAML Files Supported",
+        "onlyYaml": "Only YAML / share-link files supported (.yaml/.yml/.txt/.conf/.list)",
         "createFailed": "Failed to create profile",
         "deleteFailed": "Failed to delete profile",
         "enhanceFailed": "Failed to reactivate profiles",
