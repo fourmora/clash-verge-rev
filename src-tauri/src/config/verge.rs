@@ -224,6 +224,19 @@ pub struct IVerge {
     pub hover_jump_navigator_delay: Option<u64>,
 
     pub enable_external_controller: Option<bool>,
+
+    /// Enable per-app proxying: route selected processes through the proxy network.
+    pub enable_process_proxy: Option<bool>,
+
+    /// Process names (e.g. `Telegram.exe`, `WeChat`) routed through the proxy.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[specta(type = Option<Vec<std::string::String>>)]
+    pub process_proxy_list: Option<Vec<std::string::String>>,
+
+    /// Target outbound (proxy group name) for the PROCESS-NAME rules.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[specta(type = Option<std::string::String>)]
+    pub process_proxy_target: Option<std::string::String>,
 }
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, specta::Type)]
@@ -422,6 +435,9 @@ impl IVerge {
             enable_dns_settings: Some(false),
             home_cards: None,
             enable_external_controller: Some(false),
+            enable_process_proxy: Some(false),
+            process_proxy_list: None,
+            process_proxy_target: None,
             ..Self::default()
         }
     }
@@ -524,6 +540,9 @@ impl IVerge {
         patch!(enable_dns_settings);
         patch!(home_cards);
         patch!(enable_external_controller);
+        patch!(enable_process_proxy);
+        patch!(process_proxy_list);
+        patch!(process_proxy_target);
     }
 
     pub fn get_log_level(&self) -> LevelFilter {

@@ -134,6 +134,10 @@
               "add": "添加",
               "addNew": "添加新隧道"
             }
+          },
+          "appProxy": {
+            "title": "应用代理",
+            "tooltip": "让选中的应用走代理网络（基于 PROCESS-NAME 规则）"
           }
         },
         "tooltips": {
@@ -648,6 +652,26 @@
       "fields": {
         "ipAddress": "IP 地址",
         "macAddress": "MAC 地址"
+      }
+    },
+    "appProxy": {
+      "title": "应用代理规则",
+      "selected": "已选应用",
+      "selectedEmpty": "还没有选择应用",
+      "manualLabel": "手动添加进程名",
+      "manualPlaceholder": "例如 Telegram.exe 或 WeChat",
+      "add": "添加",
+      "systemLabel": "正在运行的进程",
+      "load": "加载",
+      "loading": "加载中...",
+      "searchPlaceholder": "搜索进程",
+      "empty": "点击“加载”列出正在运行的进程",
+      "targetLabel": "目标代理组",
+      "targetHint": "留空则使用配置中的第一个代理组",
+      "messages": {
+        "duplicate": "该进程已在列表中",
+        "emptyName": "进程名不能为空",
+        "saved": "应用代理规则已保存"
       }
     }
   },

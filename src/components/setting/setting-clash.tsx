@@ -5,7 +5,12 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { updateGeo, type LogLevel } from 'tauri-plugin-mihomo-api'
 
-import { BaseDialog, DialogRef, Switch, TooltipIcon } from '@/components/base'
+import {
+  BaseDialog,
+  type DialogRef,
+  Switch,
+  TooltipIcon,
+} from '@/components/base'
 import { useClash } from '@/hooks/use-clash'
 import { useClashLog } from '@/hooks/use-clash-log'
 import { useDisplayedMixedPort } from '@/hooks/use-displayed-mixed-port'
@@ -23,6 +28,7 @@ import { DnsViewer } from './mods/dns-viewer'
 import { HeaderConfiguration } from './mods/external-controller-cors'
 import { GuardState } from './mods/guard-state'
 import { NetworkInterfaceViewer } from './mods/network-interface-viewer'
+import { ProcessRulesViewer } from './mods/process-rules-viewer'
 import { SettingItem, SettingList } from './mods/setting-comp'
 import { TunnelsViewer } from './mods/tunnels-viewer'
 import { WebUIViewer } from './mods/web-ui-viewer'
@@ -37,7 +43,7 @@ const SettingClash = ({ onError }: Props) => {
   const { t } = useTranslation()
 
   const { clash, version, mutateClash, patchClash } = useClash()
-  const { verge, mutateVerge } = useVerge()
+  const { verge, mutateVerge, patchVerge } = useVerge()
   const { current: currentProfile } = useProfiles()
   const dnsEnabled = currentProfile
     ? (verge?.profile_dns_settings?.[currentProfile.uid!]?.enabled ??
@@ -68,6 +74,7 @@ const SettingClash = ({ onError }: Props) => {
   const dnsRef = useRef<DialogRef>(null)
   const corsRef = useRef<DialogRef>(null)
   const tunnelRef = useRef<DialogRef>(null)
+  const processRulesRef = useRef<DialogRef>(null)
 
   const onSwitchFormat = (_e: any, value: boolean) => value
   const onChangeData = (patch: Partial<IConfigData>) => {
@@ -155,6 +162,30 @@ const SettingClash = ({ onError }: Props) => {
       </BaseDialog>
       <HeaderConfiguration ref={corsRef} />
       <TunnelsViewer ref={tunnelRef} />
+      <ProcessRulesViewer ref={processRulesRef} />
+      <SettingItem
+        label={t('settings.sections.clash.form.fields.appProxy.title')}
+        extra={
+          <TooltipIcon
+            title={t('settings.sections.clash.form.fields.appProxy.tooltip')}
+            sx={{ opacity: '0.7' }}
+          />
+        }
+        onClick={() => processRulesRef.current?.open()}
+      >
+        <GuardState
+          value={verge?.enable_process_proxy ?? false}
+          valueProps="checked"
+          onCatch={onError}
+          onFormat={onSwitchFormat}
+          onChange={(e) =>
+            mutateVerge((old) => ({ ...old!, enable_process_proxy: e }))
+          }
+          onGuard={(e) => patchVerge({ enable_process_proxy: e })}
+        >
+          <Switch edge="end" />
+        </GuardState>
+      </SettingItem>
       <SettingItem
         label={t('settings.sections.clash.form.fields.allowLan')}
         extra={

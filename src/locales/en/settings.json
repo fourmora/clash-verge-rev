@@ -134,6 +134,10 @@
               "add": "Add",
               "addNew": "Add New Tunnel"
             }
+          },
+          "appProxy": {
+            "title": "App Proxy",
+            "tooltip": "Route selected applications through the proxy network (PROCESS-NAME rules)"
           }
         },
         "tooltips": {
@@ -648,6 +652,26 @@
       "fields": {
         "ipAddress": "IP Address",
         "macAddress": "MAC Address"
+      }
+    },
+    "appProxy": {
+      "title": "App Proxy Rules",
+      "selected": "Selected Apps",
+      "selectedEmpty": "No apps selected yet",
+      "manualLabel": "Add process name manually",
+      "manualPlaceholder": "e.g. Telegram.exe or WeChat",
+      "add": "Add",
+      "systemLabel": "Running Processes",
+      "load": "Load",
+      "loading": "Loading...",
+      "searchPlaceholder": "Search processes",
+      "empty": "Click Load to list running processes",
+      "targetLabel": "Target Proxy Group",
+      "targetHint": "Leave empty to use the first proxy group in the profile",
+      "messages": {
+        "duplicate": "This process is already in the list",
+        "emptyName": "Process name cannot be empty",
+        "saved": "App proxy rules saved"
       }
     }
   },

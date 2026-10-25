@@ -865,6 +865,26 @@ export interface TranslationResources {
         }
       }
       modals: {
+        appProxy: {
+          add: string
+          empty: string
+          load: string
+          loading: string
+          manualLabel: string
+          manualPlaceholder: string
+          messages: {
+            duplicate: string
+            emptyName: string
+            saved: string
+          }
+          searchPlaceholder: string
+          selected: string
+          selectedEmpty: string
+          systemLabel: string
+          targetHint: string
+          targetLabel: string
+          title: string
+        }
         backup: {
           actions: {
             backup: string
@@ -1259,6 +1279,10 @@ export interface TranslationResources {
           form: {
             fields: {
               allowLan: string
+              appProxy: {
+                title: string
+                tooltip: string
+              }
               clashCore: string
               dnsOverwrite: string
               external: string

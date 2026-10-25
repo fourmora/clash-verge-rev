@@ -134,6 +134,10 @@
               "add": "新增",
               "addNew": "新增通道"
             }
+          },
+          "appProxy": {
+            "title": "應用代理",
+            "tooltip": "讓選中的應用走代理網路（基於 PROCESS-NAME 規則）"
           }
         },
         "tooltips": {
@@ -648,6 +652,26 @@
       "fields": {
         "ipAddress": "IP 位址",
         "macAddress": "MAC 位址"
+      }
+    },
+    "appProxy": {
+      "title": "應用代理規則",
+      "selected": "已選應用",
+      "selectedEmpty": "還沒有選擇應用",
+      "manualLabel": "手動新增程式名稱",
+      "manualPlaceholder": "例如 Telegram.exe 或 WeChat",
+      "add": "新增",
+      "systemLabel": "正在執行的程式",
+      "load": "載入",
+      "loading": "載入中...",
+      "searchPlaceholder": "搜尋程式",
+      "empty": "點擊「載入」列出正在執行的程式",
+      "targetLabel": "目標代理群組",
+      "targetHint": "留空則使用設定中的第一個代理群組",
+      "messages": {
+        "duplicate": "該程式已在清單中",
+        "emptyName": "程式名稱不能為空",
+        "saved": "應用代理規則已儲存"
       }
     }
   },

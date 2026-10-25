@@ -42,6 +42,9 @@ struct ConfigValues {
     enable_dns_settings: bool,
     dns_override_confirmation: Option<String>,
     enable_external_controller: bool,
+    enable_process_proxy: bool,
+    process_proxy_list: Vec<String>,
+    process_proxy_target: Option<String>,
     #[cfg(not(target_os = "windows"))]
     redir_enabled: bool,
     #[cfg(target_os = "linux")]
@@ -122,6 +125,9 @@ async fn get_config_values(profile_uid: &str) -> ConfigValues {
         ref verge_socks_enabled,
         ref verge_http_enabled,
         ref enable_external_controller,
+        ref enable_process_proxy,
+        ref process_proxy_list,
+        ref process_proxy_target,
         ..
     } = **verge_arc;
     let enable_external_controller = enable_external_controller.unwrap_or(false);
@@ -143,6 +149,15 @@ async fn get_config_values(profile_uid: &str) -> ConfigValues {
     #[cfg(target_os = "linux")]
     let tproxy_enabled = verge_arc.verge_tproxy_enabled.unwrap_or(false);
 
+    let enable_process_proxy = enable_process_proxy.unwrap_or(false);
+    let process_proxy_list = process_proxy_list
+        .clone()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|name| !name.trim().is_empty())
+        .collect::<Vec<_>>();
+    let process_proxy_target = process_proxy_target.clone().filter(|t| !t.trim().is_empty());
+
     drop(verge_arc);
     drop(verge);
 
@@ -156,6 +171,9 @@ async fn get_config_values(profile_uid: &str) -> ConfigValues {
         enable_dns_settings,
         dns_override_confirmation,
         enable_external_controller,
+        enable_process_proxy,
+        process_proxy_list,
+        process_proxy_target,
         #[cfg(not(target_os = "windows"))]
         redir_enabled,
         #[cfg(target_os = "linux")]
@@ -871,6 +889,65 @@ async fn apply_dns_settings(config: Mapping, enable_dns_settings: bool) -> (Mapp
     (config, Mapping::new())
 }
 
+/// Injects PROCESS-NAME rules for the per-app proxy feature.
+///
+/// Rules are inserted right before the final `MATCH` rule (or appended when
+/// there is none), so selected processes are routed to the target outbound
+/// before the catch-all rule. The target defaults to the first proxy group.
+fn apply_process_rules(
+    mut config: Mapping,
+    enable: bool,
+    processes: &[String],
+    target: Option<&str>,
+) -> Mapping {
+    if !enable || processes.is_empty() {
+        return config;
+    }
+
+    let target = match target.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
+        Some(t) => t,
+        None => config
+            .get("proxy-groups")
+            .and_then(|v| v.as_sequence())
+            .and_then(|groups| groups.first())
+            .and_then(|group| group.get("name"))
+            .and_then(|name| name.as_str())
+            .map(|name| name.to_string()),
+    };
+    let Some(target) = target else {
+        logging!(warn, Type::Config, "process proxy enabled but no proxy group found to route traffic to");
+        return config;
+    };
+
+    let mut rules = config
+        .get("rules")
+        .and_then(|v| v.as_sequence().cloned())
+        .unwrap_or_default();
+
+    let process_rules: Vec<Value> = processes
+        .iter()
+        .filter(|name| !rules.iter().any(|rule| rule.as_str().is_some_and(|s| s.contains(name.as_str()))))
+        .map(|name| Value::from(format!("PROCESS-NAME,{name},{target}")))
+        .collect();
+
+    if process_rules.is_empty() {
+        return config;
+    }
+
+    let insert_pos = rules
+        .iter()
+        .position(|rule| rule.as_str().is_some_and(|s| s.to_uppercase().starts_with("MATCH")))
+        .unwrap_or(rules.len());
+
+    for (offset, rule) in process_rules.into_iter().enumerate() {
+        rules.insert(insert_pos + offset, rule);
+    }
+
+    config.insert("rules".into(), rules.into());
+    logging!(debug, Type::Config, "applied process proxy rules for {} processes", processes.len());
+    config
+}
+
 /// Returns the enhanced profile, its original keys, script logs, and DNS override decision.
 pub async fn enhance(
     profiles: &IProfiles,
@@ -887,6 +964,9 @@ pub async fn enhance(
         enable_dns_settings,
         dns_override_confirmation,
         enable_external_controller,
+        enable_process_proxy,
+        process_proxy_list,
+        process_proxy_target,
         #[cfg(not(target_os = "windows"))]
         redir_enabled,
         #[cfg(target_os = "linux")]
@@ -956,6 +1036,14 @@ pub async fn enhance(
         &authoritative,
     )
     .await;
+
+    // Per-app proxy: route selected processes through the proxy network.
+    let config = apply_process_rules(
+        config,
+        enable_process_proxy,
+        &process_proxy_list,
+        process_proxy_target.as_deref(),
+    );
 
     notify_discarded_keys(authoritative.overridden(&authoritative, &authoritative.current(&config)));
     let config = authoritative.enforce(config);

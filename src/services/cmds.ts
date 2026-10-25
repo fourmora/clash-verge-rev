@@ -501,3 +501,7 @@ export async function checkMediaUnlock(onComplete: Channel<UnlockItem>) {
 export async function checkMediaUnlockItem(name: string) {
   return commands.checkMediaUnlockItem(name)
 }
+
+export async function listSystemProcesses() {
+  return commands.listSystemProcesses()
+}

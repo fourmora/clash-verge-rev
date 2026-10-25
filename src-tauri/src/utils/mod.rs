@@ -10,6 +10,7 @@ pub mod macos_launch_guard;
 pub(crate) mod network;
 pub use crate::core::notify::desktop as notification;
 pub mod port;
+pub mod process_list;
 pub mod resolve;
 pub mod retry;
 #[cfg(target_os = "windows")]
@@ -21,5 +22,6 @@ pub(crate) mod startup;
 pub mod tmpl;
 #[cfg(target_os = "macos")]
 pub mod tray_speed;
+pub mod uri_subscription;
 pub mod window_manager;
 pub mod yaml_emitter;

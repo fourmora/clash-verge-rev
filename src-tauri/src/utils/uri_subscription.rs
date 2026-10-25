@@ -39,11 +39,8 @@ fn is_valid_clash_config(text: &str) -> bool {
 /// Decodes a base64-encoded subscription body (URL-safe or standard, padded or not).
 fn decode_base64_body(data: &str) -> Option<std::string::String> {
     let cleaned: std::string::String = data.chars().filter(|c| !c.is_whitespace()).collect();
-    if cleaned.is_empty() || cleaned.contains("//\u{0}") {
-        return None;
-    }
-    // Plain share-link lists are not base64; bail out early.
-    if SUPPORTED_SCHEMES.iter().any(|s| cleaned.contains(s)) {
+    // URLs and share-link lists are not base64; bail out early.
+    if cleaned.is_empty() || cleaned.contains("://") {
         return None;
     }
 
@@ -162,9 +159,13 @@ fn extract_fragment(rest: &str) -> (&str, Option<std::string::String>) {
 fn parse_vless(line: &str) -> Option<Mapping> {
     let rest = line.strip_prefix("vless://")?;
     let (main, frag) = extract_fragment(rest);
-    let (userinfo, hostport) = main.split_once('@')?;
+    let (addr, query_str) = match main.split_once('?') {
+        Some((addr, q)) => (addr, q),
+        None => (main, ""),
+    };
+    let (userinfo, hostport) = addr.split_once('@')?;
     let (host, port) = split_host_port(hostport)?;
-    let query = parse_query(main.split_once('?').map(|(_, q)| q).unwrap_or(""));
+    let query = parse_query(query_str);
 
     let mut map = base_mapping(&host, port, &frag.unwrap_or_else(|| host.clone()), "vless");
     map.insert("uuid".into(), percent_decode(userinfo).into());
@@ -366,7 +367,7 @@ fn parse_hysteria2(line: &str) -> Option<Mapping> {
     if query.get("insecure").is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true")) {
         map.insert("skip-cert-verify".into(), true.into());
     }
-    if let Some(obfs) = query.get("obfs").filter(|o| !o.is_empty() && o != "none") {
+    if let Some(obfs) = query.get("obfs").filter(|o| !o.is_empty() && o.as_str() != "none") {
         let mut opts = Mapping::new();
         opts.insert("type".into(), obfs.clone().into());
         insert_opt(&mut opts,"password", query.get("obfs-password").cloned());
@@ -420,31 +421,31 @@ mod tests {
     fn reality_fields_are_mapped() {
         let text = "vless://u@h.com:443?security=reality&sni=h.com&fp=chrome&pbk=PUBKEY&sid=abcd&flow=xtls-rprx-vision&type=tcp#R1";
         let proxy = parse_proxy_uri(text).unwrap();
-        assert_eq!(proxy.get("public-key").map(|v| v.to_string()), Some("PUBKEY".into()));
-        assert_eq!(proxy.get("flow").map(|v| v.to_string()), Some("xtls-rprx-vision".into()));
+        assert_eq!(proxy.get("public-key").and_then(|v| v.as_str()), Some("PUBKEY"));
+        assert_eq!(proxy.get("flow").and_then(|v| v.as_str()), Some("xtls-rprx-vision"));
     }
 
     #[test]
     fn ss_plain_userinfo_is_converted() {
         let text = "ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ=@1.2.3.4:8388#SSNode";
         let proxy = parse_proxy_uri(text).unwrap();
-        assert_eq!(proxy.get("cipher").map(|v| v.to_string()), Some("aes-256-gcm".into()));
-        assert_eq!(proxy.get("password").map(|v| v.to_string()), Some("password".into()));
+        assert_eq!(proxy.get("cipher").and_then(|v| v.as_str()), Some("aes-256-gcm"));
+        assert_eq!(proxy.get("password").and_then(|v| v.as_str()), Some("password"));
     }
 
     #[test]
     fn trojan_link_is_converted() {
         let text = "trojan://pass@t.com:443?sni=t.com&allowinsecure=1#T1";
         let proxy = parse_proxy_uri(text).unwrap();
-        assert_eq!(proxy.get("type").map(|v| v.to_string()), Some("trojan".into()));
-        assert_eq!(proxy.get("skip-cert-verify").map(|v| v.to_string()), Some("true".into()));
+        assert_eq!(proxy.get("type").and_then(|v| v.as_str()), Some("trojan"));
+        assert_eq!(proxy.get("skip-cert-verify").and_then(|v| v.as_bool()), Some(true));
     }
 
     #[test]
     fn hysteria2_link_is_converted() {
         let text = "hy2://pass@h2.com:443?sni=h2.com&obfs=salamander&obfs-password=xyz#H2";
         let proxy = parse_proxy_uri(text).unwrap();
-        assert_eq!(proxy.get("type").map(|v| v.to_string()), Some("hysteria2".into()));
+        assert_eq!(proxy.get("type").and_then(|v| v.as_str()), Some("hysteria2"));
         assert!(proxy.contains_key("obfs"));
     }
 }
