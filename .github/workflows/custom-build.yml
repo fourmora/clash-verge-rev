@@ -59,7 +59,9 @@ jobs:
         shell: bash
 
       - name: Build
-        run: pnpm build --target ${{ matrix.target }}
+        run: >-
+          pnpm build --target ${{ matrix.target }}
+          --config '{"bundle":{"createUpdaterArtifacts":false}}'
         shell: bash
 
       - name: Upload artifact (Windows)
