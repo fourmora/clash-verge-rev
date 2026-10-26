@@ -118,7 +118,12 @@ export const ProcessRulesViewer = forwardRef<ProcessRulesViewerRef>(
                 {t('settings.modals.appProxy.selectedEmpty')}
               </Typography>
             ) : (
-              <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+              <Stack
+                direction="row"
+                spacing={0.5}
+                useFlexGap
+                sx={{ flexWrap: 'wrap' }}
+              >
                 {processes.map((name) => (
                   <Chip
                     key={name}
@@ -134,7 +139,11 @@ export const ProcessRulesViewer = forwardRef<ProcessRulesViewerRef>(
 
           <Divider />
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center' }}
+          >
             <TextField
               size="small"
               fullWidth
@@ -175,8 +184,7 @@ export const ProcessRulesViewer = forwardRef<ProcessRulesViewerRef>(
             <Stack
               direction="row"
               spacing={1}
-              alignItems="center"
-              sx={{ mb: 1 }}
+              sx={{ mb: 1, alignItems: 'center' }}
             >
               <Typography variant="subtitle2" sx={{ flex: 1 }}>
                 {t('settings.modals.appProxy.systemLabel')}
