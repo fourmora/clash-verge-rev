@@ -43,8 +43,8 @@ struct ConfigValues {
     dns_override_confirmation: Option<String>,
     enable_external_controller: bool,
     enable_process_proxy: bool,
-    process_proxy_list: Vec<String>,
-    process_proxy_target: Option<String>,
+    process_proxy_list: Vec<std::string::String>,
+    process_proxy_target: Option<std::string::String>,
     #[cfg(not(target_os = "windows"))]
     redir_enabled: bool,
     #[cfg(target_os = "linux")]
@@ -897,23 +897,24 @@ async fn apply_dns_settings(config: Mapping, enable_dns_settings: bool) -> (Mapp
 fn apply_process_rules(
     mut config: Mapping,
     enable: bool,
-    processes: &[String],
+    processes: &[std::string::String],
     target: Option<&str>,
 ) -> Mapping {
     if !enable || processes.is_empty() {
         return config;
     }
 
-    let target = match target.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
-        Some(t) => t,
-        None => config
-            .get("proxy-groups")
-            .and_then(|v| v.as_sequence())
-            .and_then(|groups| groups.first())
-            .and_then(|group| group.get("name"))
-            .and_then(|name| name.as_str())
-            .map(|name| name.to_string()),
-    };
+    let target: Option<std::string::String> =
+        match target.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
+            Some(t) => Some(t),
+            None => config
+                .get("proxy-groups")
+                .and_then(|v| v.as_sequence())
+                .and_then(|groups| groups.first())
+                .and_then(|group| group.get("name"))
+                .and_then(|name| name.as_str())
+                .map(|name| name.to_string()),
+        };
     let Some(target) = target else {
         logging!(warn, Type::Config, "process proxy enabled but no proxy group found to route traffic to");
         return config;

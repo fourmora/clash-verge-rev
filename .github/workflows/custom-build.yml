@@ -40,6 +40,10 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Ensure Rust target
+        run: rustup target add ${{ matrix.target }}
+        shell: bash
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
